@@ -1,0 +1,171 @@
+@startuml
+' Virgin Bartending Game — Logical View v4 (design-stage)
+' Cross-view alignment: input handling, score retrieval and minigame creation.
+title Virgin Bartending Game — Logical View (Class Diagram)
+
+top to bottom direction
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 22
+skinparam ranksep 30
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontSize 12
+hide empty members
+
+package "Application  |  State" as Application {
+  class GameApp {
+    - current_state: GameState
+    + run(): void
+    + change_state(next_state: GameState): void
+  }
+  abstract class GameState {
+    {abstract} + handle_event(event): void
+    {abstract} + update(dt: float): void
+    {abstract} + render(surface): void
+  }
+  class MainMenuState
+  class GameplayState
+  class ResultsState
+  class SettingsState
+  class TutorialState
+  class HighScoresState
+
+  GameApp --> "1" GameState : active
+  GameState <|-- MainMenuState
+  GameState <|-- GameplayState
+  GameState <|-- ResultsState
+  GameState <|-- SettingsState
+  GameState <|-- TutorialState
+  GameState <|-- HighScoresState
+}
+
+package "Gameplay  |  Orders & Session" as Gameplay {
+  class GameSession {
+    - session_duration: float
+    - remaining_time: float
+    - active_order: DrinkOrder [0..1]
+    - active_minigame: Minigame [0..1]
+    - current_minigame_index: int
+    - minigame_results: list[float]
+    + GameSession(duration: float, orders: OrderManager, scores: ScoreManager)
+    + start(): void
+    + handle_event(event): void
+    + update(dt: float): void
+    - initialize_minigame(): void
+    + advance_minigame(): void
+    + complete_order(): void
+    + is_finished(): bool
+    + get_final_score(): int
+  }
+  class OrderManager {
+    + next_order(): DrinkOrder
+  }
+  class DrinkOrder {
+    + customer: Customer
+    + recipe: DrinkRecipe
+  }
+  class Customer {
+    + id: str
+    + name: str
+  }
+  class DrinkRecipe {
+    + id: str
+    + name: str
+    + pour_target: float
+    + shake_target: float
+    + garnish_target: tuple[float, float]
+  }
+
+  GameSession --> "1" OrderManager : selects orders
+  GameSession --> "0..1" DrinkOrder : active order
+  OrderManager ..> DrinkOrder : creates
+  DrinkOrder --> "1" Customer : customer
+  DrinkOrder --> "1" DrinkRecipe : recipe
+}
+
+package "Minigames  |  Template Method" as Minigames {
+  abstract class Minigame {
+    - completed: bool
+    - quality: float
+    + play_step(dt: float): void
+    {abstract} + handle_event(event): void
+    {abstract} # update_progress(dt: float): void
+    {abstract} # has_reached_goal(): bool
+    {abstract} # evaluate_result(): float
+    + is_complete(): bool
+    + get_quality(): float
+  }
+  class PourMinigame {
+    - fill_level: float
+    - target_level: float
+  }
+  class ShakeMinigame {
+    - shake_progress: float
+    - target_shakes: float
+  }
+  class GarnishMinigame {
+    - placement: tuple[float, float]
+    - target_position: tuple[float, float]
+  }
+  Minigame <|-- PourMinigame
+  Minigame <|-- ShakeMinigame
+  Minigame <|-- GarnishMinigame
+}
+
+package "Scoring  |  Strategy" as Scoring {
+  class ScoreManager {
+    - total_score: int
+    - strategy: ScoringStrategy
+    + ScoreManager(strategy: ScoringStrategy)
+    + award_order(results: list[float]): int
+    + get_total(): int
+    + reset(): void
+  }
+  interface ScoringStrategy {
+    + calculate_score(results: list[float]): int
+  }
+  class AverageQualityStrategy
+  class WeightedQualityStrategy {
+    - weights: list[float]
+  }
+  ScoreManager --> "1" ScoringStrategy : delegates to
+  ScoringStrategy <|.. AverageQualityStrategy
+  ScoringStrategy <|.. WeightedQualityStrategy
+}
+
+package "Storage  |  Local Files" as Storage {
+  class DataLoader {
+    + load_customers(path: str): list[Customer]
+    + load_recipes(path: str): list[DrinkRecipe]
+  }
+  class HighScoreRepository {
+    + load_scores(): list[int]
+    + save_score(score: int): void
+  }
+}
+
+' Cross-subsystem relationships.
+GameplayState *-- "1" GameSession : owns session
+GameSession --> "1" ScoreManager : awards points
+GameSession *-- "0..1" Minigame : owns active instance
+GameSession ..> PourMinigame : creates
+GameSession ..> ShakeMinigame : creates
+GameSession ..> GarnishMinigame : creates
+OrderManager ..> DataLoader : loads customer/recipe data
+ResultsState ..> HighScoreRepository : saves final score
+HighScoresState ..> HighScoreRepository : reads scores
+
+note right of GameSession
+  One active order at a time.
+  initialize_minigame() selects Pour,
+  Shake or Garnish using recipe targets.
+  Incomplete orders earn no points.
+  Quality values stay in [0, 1].
+end note
+note bottom of Minigame
+  Concrete play_step() is the template method:
+  it invokes abstract progress/completion hooks.
+end note
+@enduml

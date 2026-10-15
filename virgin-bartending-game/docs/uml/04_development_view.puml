@@ -1,0 +1,51 @@
+@startuml
+' Virgin Bartending Game — Development View V2 (design-stage)
+' UML package diagram: planned Python source organization and dependencies.
+title Virgin Bartending Game — Development View (Package Diagram)
+
+top to bottom direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 38
+skinparam defaultFontSize 13
+skinparam ArrowColor #555555
+skinparam package {
+  BackgroundColor #FAFAF4
+  BorderColor #555555
+}
+
+package "bartending_game.application\n(app.py, states/)" as Application
+package "bartending_game.gameplay\n(session.py, orders.py)" as Gameplay
+package "bartending_game.models\n(customer.py, recipe.py, order.py)" as Models
+package "bartending_game.minigames\n(base.py, pour.py, shake.py, garnish.py)" as Minigames
+package "bartending_game.scoring\n(manager.py, strategies.py)" as Scoring
+package "bartending_game.storage\n(loader.py, high_scores.py)" as Storage
+package "bartending_game.presentation\n(assets.py, audio.py)" as Presentation
+
+' Dashed arrows represent Python import / source-code dependencies.
+Application ..> Gameplay : controls session
+Application ..> Storage : reads / saves high scores
+Application ..> Presentation : UI / audio
+
+Gameplay ..> Models : uses orders and recipes
+Gameplay ..> Minigames : creates and runs stages
+Gameplay ..> Scoring : awards points
+Gameplay ..> Storage : loads customer / recipe data
+
+' Minigames receive primitive target values from GameSession,
+' so no direct Minigames -> Models dependency is necessary.
+Storage ..> Models : constructs loaded records
+
+' Layout hints only; no additional semantic dependencies.
+Minigames -[hidden]right- Scoring
+Scoring -[hidden]right- Storage
+
+legend bottom
+  Dashed arrows show source-code dependencies between packages.
+  GameSession passes recipe target values to minigames.
+  Keep models and scoring independent of Pygame when possible.
+  Tests, assets, and CI tooling live outside the runtime package.
+endlegend
+@enduml

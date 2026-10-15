@@ -1,0 +1,47 @@
+@startuml
+' Virgin Bartending Game - Process View (Screen State Machine V2)
+' Layout revision: shorter labels, concise notes, directional transitions.
+title Virgin Bartending Game - Process View (Screen State Machine)
+
+top to bottom direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam roundcorner 12
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty description
+
+state "Main Menu" as MainMenu
+state "Gameplay" as Gameplay
+state "Results" as Results
+state "Tutorial" as Tutorial
+state "Settings" as Settings
+state "High Scores" as HighScores
+
+[*] --> MainMenu : Launch
+
+' Primary gameplay path in a vertical arrangement.
+MainMenu -down-> Gameplay : Start Game
+Gameplay -down-> Results : Timer expires
+Results -up-> Gameplay : Play Again
+Results --> MainMenu : Main Menu
+
+' Secondary screens return to the main menu.
+MainMenu -left-> Tutorial : Tutorial
+Tutorial --> MainMenu : Back
+MainMenu -right-> Settings : Settings
+Settings --> MainMenu : Back
+MainMenu --> HighScores : High Scores
+HighScores --> MainMenu : Back
+MainMenu --> [*] : Quit
+
+note right of Gameplay
+  One active order at a time.
+  Pour -> Shake -> Garnish.
+end note
+
+note right of Results
+  Display and save final score.
+end note
+
+@enduml

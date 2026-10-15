@@ -1,0 +1,58 @@
+@startuml
+' Virgin Bartending Game — Physical View V2
+' Proposed deployment architecture; graphical game runs locally.
+title Virgin Bartending Game - Physical View (Deployment Diagram)
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 40
+skinparam defaultTextAlignment center
+
+node "Player Computer\n<<device>>" as PlayerPC {
+  node "Python 3 Runtime\n<<executionEnvironment>>" as PythonRuntime {
+    artifact "Bartending Game\n(Python / Pygame)" as GameArtifact
+  }
+  artifact "Game Assets\n(images, music, sounds)" as Assets
+  artifact "Game Data\n(customers.txt, drinks.txt)" as GameData
+  artifact "High Scores\n(local score file)" as HighScores
+}
+
+node "Developer Computer\n<<device>>" as DevPC {
+  node "WSL Ubuntu / Python\n<<executionEnvironment>>" as DevEnv {
+    artifact "Project Working Copy\n(source, tests, UML, Makefile)" as WorkingCopy
+  }
+  node "Local Docker Engine\n<<executionEnvironment>>" as LocalDocker {
+    node "Test Container\n<<executionEnvironment>>" as LocalContainer {
+      artifact "Automated Test Suite\n(pytest, Hypothesis, mypy)" as LocalChecks
+    }
+  }
+}
+
+cloud "GitHub Hosting Service" as GitHub {
+  artifact "Public Git Repository\n(source, tests, Dockerfile, workflows)" as Repo
+  node "GitHub-hosted Runner\n<<device>>" as Runner {
+    node "Runner OS / Actions\n<<executionEnvironment>>" as ActionsEnv {
+      artifact "CI Workflow\n(test, type-check, coverage)" as Workflow
+      node "CI Docker Engine\n<<executionEnvironment>>" as CIDocker {
+        node "CI Test Container\n<<executionEnvironment>>" as CIContainer {
+          artifact "Test Suite + Checks" as CIChecks
+        }
+      }
+    }
+  }
+}
+
+GameArtifact ..> Assets : reads
+GameArtifact ..> GameData : loads
+GameArtifact ..> HighScores : reads / writes
+WorkingCopy ..> LocalChecks : runs tests locally
+WorkingCopy ..> Repo : push / pull
+Repo ..> Workflow : push / pull request triggers
+Workflow ..> CIChecks : executes checks
+
+note bottom of PlayerPC
+  Gameplay is local and does not require Docker.
+  Docker supports automated testing only.
+end note
+@enduml

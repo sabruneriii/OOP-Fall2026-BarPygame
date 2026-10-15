@@ -1,0 +1,61 @@
+@startuml
+' Virgin Bartending Game - 4+1 Use Case View (+1)
+' Version 4: compact layout, minimal annotations
+left to right direction
+skinparam shadowing false
+skinparam linetype polyline
+skinparam nodesep 18
+skinparam ranksep 30
+skinparam actorStyle stickman
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FFF9DD
+  BorderColor #605D72
+  ArrowColor #605D72
+}
+skinparam rectangle {
+  BorderColor #555555
+}
+
+actor "Player" as Player
+
+rectangle "Virgin Bartending Game" {
+  usecase "Start Timed\nSession" as UC_Start
+  usecase "Prepare Drink\nOrder" as UC_Order
+  usecase "View Session\nResults" as UC_Results
+  usecase "View Tutorial" as UC_Tutorial
+  usecase "Adjust Settings" as UC_Settings
+  usecase "View High\nScores" as UC_Scores
+  usecase "Exit Game" as UC_Exit
+
+  usecase "Pour Drink" as UC_Pour
+  usecase "Shake Drink" as UC_Shake
+  usecase "Garnish Drink" as UC_Garnish
+
+  ' Required behavior, independent of execution order.
+  UC_Order .> UC_Pour : <<include>>
+  UC_Order .> UC_Shake : <<include>>
+  UC_Order .> UC_Garnish : <<include>>
+
+  ' Keep gameplay cases compact and navigation cases stacked nearby.
+  UC_Start -[hidden]down- UC_Order
+  UC_Order -[hidden]down- UC_Results
+  UC_Results -[hidden]down- UC_Tutorial
+  UC_Tutorial -[hidden]down- UC_Settings
+  UC_Settings -[hidden]down- UC_Scores
+  UC_Scores -[hidden]down- UC_Exit
+
+  UC_Pour -[hidden]down- UC_Shake
+  UC_Shake -[hidden]down- UC_Garnish
+}
+
+' Give Graphviz one strong anchor from the actor to the system.
+Player -right- UC_Order
+' Remaining associations have no forced routing direction.
+Player -- UC_Start
+Player -- UC_Results
+Player -- UC_Tutorial
+Player -- UC_Settings
+Player -- UC_Scores
+Player -- UC_Exit
+@enduml
