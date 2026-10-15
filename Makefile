@@ -11,11 +11,11 @@ all: check-style check-type run-test clean
 
 .PHONY: check-type
 check-type:
-	@echo "FIXME"
+	$(TYPE_CHECK) $(ASSIGNMENT)
 
 .PHONY: check-style
 check-style:
-	@echo "FIXME"
+	$(STYLE_CHECK) $(ASSIGNMENT)
 
 # discover and run all tests
 .PHONY: run-test

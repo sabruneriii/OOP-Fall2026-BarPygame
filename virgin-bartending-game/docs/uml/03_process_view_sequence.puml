@@ -1,0 +1,99 @@
+@startuml
+' Virgin Bartending Game - Process View (Order Sequence V4)
+' Aligned with Logical View V4; design-stage sequence.
+title Virgin Bartending Game - Process View (Order Sequence)
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 48
+skinparam ParticipantPadding 14
+skinparam BoxPadding 8
+hide footbox
+
+actor Player
+participant "app:GameApp" as App
+participant "state:GameplayState" as State
+participant "session:GameSession" as Session
+participant "orders:OrderManager" as Orders
+participant "active:Minigame" as Mini
+participant "scores:ScoreManager" as Scores
+participant "strategy:ScoringStrategy" as Strategy
+participant "results:ResultsState" as Results
+database "highScores:HighScoreRepository" as HighScores
+
+== Start session ==
+Player -> App : select Start Game
+App -> State : activate gameplay state
+State -> Session : start()
+Session -> Scores : reset()
+
+== Timed gameplay ==
+loop [remaining_time > 0]
+  Session -> Orders : next_order()
+  Orders --> Session : DrinkOrder
+
+  loop [next stage exists AND remaining_time > 0] (Pour, Shake, Garnish)
+    Session -> Session : initialize_minigame()
+    note right of Mini
+      The active instance is a PourMinigame,
+      ShakeMinigame, or GarnishMinigame.
+      GameSession constructs it from recipe targets.
+    end note
+
+    loop [stage incomplete AND remaining_time > 0]
+      opt [player input available]
+        Player -> App : mouse or keyboard input
+        App -> State : handle_event(event)
+        State -> Session : handle_event(event)
+        Session -> Mini : handle_event(event)
+      end
+      App -> State : update(dt)
+      State -> Session : update(dt)
+      Session -> Session : decrease timer (min 0)
+      alt [remaining_time > 0]
+        Session -> Mini : play_step(dt)
+        note right of Mini
+          Concrete Template Method calls
+          subclass progress/completion hooks.
+        end note
+        Mini --> Session : completion status
+      else [remaining_time == 0]
+        Session -> Session : discard incomplete order
+        note over Session,Mini
+          No quality is recorded for the unfinished stage.
+          No points are awarded for the unfinished order.
+        end note
+      end
+    end
+
+    opt [stage completed AND remaining_time > 0]
+      Session -> Mini : get_quality()
+      Mini --> Session : normalized quality [0, 1]
+      Session -> Session : advance_minigame()
+    end
+  end
+
+  opt [all three stages completed AND remaining_time > 0]
+    State -> Session : complete_order()
+    Session -> Scores : award_order(minigame_results)
+    Scores -> Strategy : calculate_score(results)
+    Strategy --> Scores : awarded points
+    Scores --> Session : updated total
+  end
+  note over Session,Orders
+    The outer loop starts another order only if time remains.
+    Completed orders keep their points on timeout.
+  end note
+end
+
+== Finalize once when time expires ==
+State -> Session : is_finished()
+Session --> State : true
+State -> App : change_state(resultsState)
+App -> Results : activate results state
+Results -> Session : get_final_score()
+Session -> Scores : get_total()
+Scores --> Session : final score
+Session --> Results : final score
+Results -> HighScores : save_score(final score)
+Results --> Player : display final results
+@enduml
