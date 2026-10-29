@@ -1,46 +1,19 @@
-FROM python:3.14
+FROM python:3.10-slim
 
-RUN apt update \
-  && apt install -y \
-  g++ gcc make sqlite3 time curl git nano dos2unix \
-  net-tools iputils-ping iproute2 sudo gdb less \
-  && apt clean
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# Developer tools, PlantUML, and SDL/X11 runtime libraries for Pygame.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    make git curl nano ca-certificates \
+    default-jre graphviz plantuml \
+    libgl1 libglib2.0-0 libx11-6 libxext6 libxrender1 libasound2 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Java and Graphviz for plantuml
-RUN apt install default-jre graphviz -y
+WORKDIR /workspace/virgin-bartending-game
+COPY requirements.txt /tmp/requirements.txt
+RUN python -m pip install --no-cache-dir -r /tmp/requirements.txt
 
-ARG USER=user
-ARG UID=1000
-ARG GID=1000
-
-# Set environment variables
-ENV USER=${USER}
-ENV HOME=/home/${USER}
-
-# Create user and setup permissions on /etc/sudoers
-RUN useradd -m -s /bin/bash -N -u $UID $USER && \
-  echo "${USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers && \
-  chmod 0440 /etc/sudoers && \
-  chmod g+w /etc/passwd 
-
-USER user
-
-WORKDIR ${HOME}
-
-RUN pip install --upgrade pip
-
-# install python packages from requirements.txt
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Install zsh - use "Bira" theme with some customization. 
-RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)" -- \
-  -t bira \
-  -p git \
-  -p ssh-agent \
-  -p https://github.com/zsh-users/zsh-autosuggestions \
-  -p https://github.com/zsh-users/zsh-completions
-
-ENV PATH="${HOME}/.local/bin:$PATH"
-CMD zsh
+# Source is mounted by Compose; image still contains all Python/build tools.
+CMD ["python", "main.py"]

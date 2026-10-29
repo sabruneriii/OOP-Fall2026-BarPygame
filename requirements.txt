@@ -1,3 +1,4 @@
+# Retained course environment dependencies
 pytest
 pytest-cov
 jupyter
@@ -10,3 +11,6 @@ lxml
 requests
 pdoc
 kattis-cli
+# Game and course security checks
+pygame
+bandit

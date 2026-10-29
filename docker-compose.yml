@@ -1,27 +1,23 @@
-services:
-  container:
-    build:
-      context: ./ # Use the current directory as the build context
-      dockerfile: Dockerfile
-    image: ${IMAGE_NAME}
-    hostname: ${CONTAINER_NAME}
-    container_name: ${CONTAINER_NAME}
-    environment:
-      - REPO_NAME=${REPO_NAME}
-    working_dir: /home/user/${REPO_NAME}
-    volumes:
-      - ./:/home/user/${REPO_NAME}
-      - ${HOME}/.gitconfig:/home/user/.gitconfig
-      - ${HOME}/.ssh:/home/user/.ssh
-      - ${HOME}/.zsh_history:/home/user/.zsh_history
-      - ${HOME}/.kattisrc:/home/user/.kattisrc
-    cap_add:
-      - ALL
-    privileged: true # Grant full privileges to the container
-    ports:
-      - 8888:8888
-    command: [ "sh", "-c", "sudo chown user --recursive /home/user; zsh && tail -f /dev/null" ]
 
-networks:
-  default:
-    driver: bridge
+services:
+  game:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: barpygame:latest
+
+    working_dir: /workspace/virgin-bartending-game
+
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+
+    volumes:
+      - ./:/workspace
+
+    environment:
+      SDL_AUDIODRIVER: dummy
+      HOME: /tmp
+      XDG_CACHE_HOME: /tmp/.cache
+      HYPOTHESIS_STORAGE_DIRECTORY: /tmp/hypothesis
+
+    command: ["python", "main.py"]

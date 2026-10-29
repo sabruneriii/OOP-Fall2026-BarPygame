@@ -1,0 +1,9 @@
+.git
+.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.hypothesis
+**/.coverage
+**/docs/htmlcov
+**/docs/code-docs
