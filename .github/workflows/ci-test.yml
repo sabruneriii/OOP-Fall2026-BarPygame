@@ -25,7 +25,19 @@ jobs:
         run: make check-style
 
       - name: Check Python types
-        run: make check-types
+        run: |
+          docker compose run --rm --no-deps game mypy --version
+
+          docker compose run --rm --no-deps \
+            -e SDL_VIDEODRIVER=dummy \
+            game mypy \
+            --show-traceback \
+            --no-incremental \
+            --cache-dir=/dev/null \
+            --strict \
+            --allow-untyped-decorators \
+            --ignore-missing-imports \
+            main.py
 
       - name: Run automated tests
         run: make run-test
