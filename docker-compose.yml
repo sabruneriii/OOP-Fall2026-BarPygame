@@ -1,15 +1,23 @@
+
 services:
   game:
     build:
       context: .
       dockerfile: Dockerfile
+
     image: barpygame:latest
+
     working_dir: /workspace/virgin-bartending-game
-    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+
     volumes:
       - ./:/workspace
+
     environment:
       SDL_AUDIODRIVER: dummy
-      Home: /tmp
+      HOME: /tmp
       XDG_CACHE_HOME: /tmp/.cache
+      HYPOTHESIS_STORAGE_DIRECTORY: /tmp/hypothesis
+
     command: ["python", "main.py"]
